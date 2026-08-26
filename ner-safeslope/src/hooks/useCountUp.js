@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export const useCountUp = (target, duration = 2000, startOnMount = true) => {
   const [count, setCount] = useState(0);

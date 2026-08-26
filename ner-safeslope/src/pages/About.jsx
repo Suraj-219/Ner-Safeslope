@@ -1,4 +1,4 @@
-import { Users, Shield, Building2, MapPin, Phone, Mail, ExternalLink, ChevronRight, Heart } from 'lucide-react';
+import { Users, Shield, Building2, MapPin, Phone, Mail, ChevronRight, Heart } from 'lucide-react';
 import { useInView } from '../hooks/useInView';
 
 const userTypes = [

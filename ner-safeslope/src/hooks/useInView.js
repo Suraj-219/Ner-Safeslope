@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-export const useInView = (options = {}) => {
+const DEFAULT_OPTIONS = {};
+
+export const useInView = (options = DEFAULT_OPTIONS) => {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
 
@@ -14,7 +16,7 @@ export const useInView = (options = {}) => {
 
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [options]);
 
   return [ref, inView];
 };

@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap } from 'react-leaflet';
+import { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip as RTooltip, Legend, PieChart, Pie, Cell
+  Tooltip as RTooltip, PieChart, Pie, Cell
 } from 'recharts';
 import {
   Filter, MapPin, Droplets, Wind, AlertTriangle,
@@ -11,29 +11,23 @@ import {
 } from 'lucide-react';
 import {
   locations, NER_STATES, RISK_LEVELS, CATEGORIES,
-  getRiskColor, getRiskBgClass, getRoadStatusClass, topPriorityLocations
+  getRiskColor, getRiskBgClass, getRoadStatusClass
 } from '../data/locations';
 import { forecastDataSets, forecastZones } from '../data/weather';
+import { createLocationFromReport, loadReports } from '../data/reportStore';
 
 // Fix leaflet bounds to NER region
 function MapBounds({ filtered }) {
   const map = useMap();
   useEffect(() => {
-    // NER bounding box approx
-    map.fitBounds([[22, 88], [29.5, 96.5]], { padding: [20, 20] });
-  }, []);
+    if (filtered.length === 0) {
+      map.fitBounds([[22, 88], [29.5, 96.5]], { padding: [20, 20] });
+      return;
+    }
+    map.fitBounds(filtered.map(location => [location.lat, location.lng]), { padding: [20, 20], maxZoom: 9 });
+  }, [filtered, map]);
   return null;
 }
-
-// Custom donut chart data
-const riskDistribution = [
-  { name: 'Low',      value: 8,  color: '#22c55e' },
-  { name: 'Moderate', value: 11, color: '#f59e0b' },
-  { name: 'High',     value: 15, color: '#f97316' },
-  { name: 'Severe',   value: 6,  color: '#ef4444' },
-];
-
-const DONUT_COLORS = ['#22c55e', '#f59e0b', '#f97316', '#ef4444'];
 
 function Skeleton({ className }) {
   return <div className={`skeleton ${className}`} />;
@@ -47,6 +41,13 @@ export default function Dashboard() {
   const [selected, setSelected] = useState(null);
   const [forecastZone, setForecastZone] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [reports, setReports] = useState(loadReports);
+
+  useEffect(() => {
+    const refreshReports = () => setReports(loadReports());
+    window.addEventListener('storage', refreshReports);
+    return () => window.removeEventListener('storage', refreshReports);
+  }, []);
 
   // Simulate loading
   useEffect(() => {
@@ -54,13 +55,25 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, []);
 
-  const filtered = locations.filter(l => {
+  const reportLocations = reports.map(createLocationFromReport);
+  const allLocations = [...locations, ...reportLocations];
+  const filtered = allLocations.filter(l => {
     const matchState = filterState === 'All States' || l.state === filterState;
     const matchRisk  = filterRisk  === 'All Levels' || l.riskLevel === filterRisk;
     const matchCat   = filterCat   === 'All Categories' || l.category === filterCat;
     const matchSearch = !searchQuery || l.name.toLowerCase().includes(searchQuery.toLowerCase()) || l.state.toLowerCase().includes(searchQuery.toLowerCase());
     return matchState && matchRisk && matchCat && matchSearch;
   });
+
+  const riskDistribution = ['Low', 'Moderate', 'High', 'Severe'].map(name => ({
+    name,
+    value: filtered.filter(location => location.riskLevel === name).length,
+    color: getRiskColor(name),
+  }));
+  const priorityLocations = [...filtered]
+    .filter(location => location.riskLevel === 'Severe' || location.riskLevel === 'High')
+    .sort((a, b) => b.riskScore - a.riskScore)
+    .slice(0, 5);
 
   const forecastData = forecastDataSets[forecastZone] || forecastDataSets[1];
 
@@ -329,7 +342,7 @@ export default function Dashboard() {
                 Emergency Priority List
               </h3>
               <div className="space-y-2">
-                {topPriorityLocations.map((loc, i) => (
+                {priorityLocations.map((loc, i) => (
                   <button
                     key={loc.id}
                     onClick={() => setSelected(loc)}
@@ -358,7 +371,7 @@ export default function Dashboard() {
                 Road Connectivity Status
               </h3>
               <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                {locations.filter(l => l.category === 'Road' || l.roadStatus !== 'Open').slice(0, 12).map(loc => (
+                {filtered.filter(l => l.category === 'Road' || l.roadStatus !== 'Open').slice(0, 12).map(loc => (
                   <div key={loc.id} className="flex items-center justify-between gap-2 text-xs py-2 border-b border-gray-50 last:border-0">
                     <div className="min-w-0">
                       <div className="font-medium text-gray-700 truncate">{loc.name}</div>
@@ -369,6 +382,9 @@ export default function Dashboard() {
                     </span>
                   </div>
                 ))}
+                {filtered.filter(l => l.category === 'Road' || l.roadStatus !== 'Open').length === 0 && (
+                  <p className="text-xs text-gray-400 py-4 text-center">No road issues in this selection.</p>
+                )}
               </div>
             </div>
           </div>

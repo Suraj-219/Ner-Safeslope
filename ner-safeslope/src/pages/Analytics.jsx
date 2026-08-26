@@ -3,9 +3,9 @@ import {
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   Radar, Tooltip as RTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell
 } from 'recharts';
-import { Brain, Info, ChevronDown, TrendingUp, BarChart2 } from 'lucide-react';
+import { Brain, Info, TrendingUp } from 'lucide-react';
 import { forecastZones, analyticsData } from '../data/weather';
-import { locations, getRiskColor } from '../data/locations';
+import { getRiskColor } from '../data/locations';
 
 // SVG Gauge Component
 function RiskGauge({ value }) {
@@ -69,7 +69,6 @@ export default function Analytics() {
   const [selectedZone, setSelectedZone] = useState(1);
   const data = analyticsData[selectedZone] || analyticsData[1];
   const zone = forecastZones.find(z => z.id === selectedZone);
-  const loc  = locations.find(l => l.name === zone?.name);
 
   const radarData = [
     { factor: 'Rainfall',      value: data.factors.rainfall },

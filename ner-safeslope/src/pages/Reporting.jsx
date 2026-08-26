@@ -4,7 +4,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast, Toaster } from 'react-hot-toast';
 import { Upload, MapPin, User, FileText, CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
-import { initialReports, INCIDENT_TYPES, ROLES, LOCATION_OPTIONS } from '../data/reports';
+import { INCIDENT_TYPES, ROLES, LOCATION_OPTIONS } from '../data/reports';
+import { locations } from '../data/locations';
+import { loadReports, saveReports } from '../data/reportStore';
 
 // Fix leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -29,7 +31,6 @@ const STATUS_CONFIG = {
 
 function ReportCard({ report, onRemove }) {
   const cfg = STATUS_CONFIG[report.status] || STATUS_CONFIG.Active;
-  const Ico = cfg.icon;
   return (
     <div className="card-hover animate-fade-in-up">
       <div className="flex items-start justify-between mb-3">
@@ -70,7 +71,7 @@ function ReportCard({ report, onRemove }) {
 }
 
 export default function Reporting() {
-  const [reports, setReports] = useState(initialReports);
+  const [reports, setReports] = useState(loadReports);
   const [form, setForm] = useState({
     name: '', role: 'Citizen', location: '', lat: null, lng: null,
     incidentType: 'Crack Detected', description: '', photo: null,
@@ -79,6 +80,11 @@ export default function Reporting() {
   const [markerPos, setMarkerPos] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef();
+
+  const updateReports = (nextReports) => {
+    setReports(nextReports);
+    saveReports(nextReports);
+  };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -118,7 +124,7 @@ export default function Reporting() {
       hasPhoto: !!form.photo,
     };
 
-    setReports(prev => [newReport, ...prev]);
+    updateReports([newReport, ...reports]);
     setForm({ name: '', role: 'Citizen', location: '', lat: null, lng: null, incidentType: 'Crack Detected', description: '', photo: null });
     setPhotoPreview(null);
     setMarkerPos(null);
@@ -182,7 +188,17 @@ export default function Reporting() {
                   <select
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400"
                     value={form.location}
-                    onChange={e => setForm(f => ({...f, location: e.target.value}))}
+                    onChange={e => {
+                      const location = e.target.value;
+                      const match = locations.find(l => `${l.name}, ${l.state}` === location);
+                      setForm(f => ({
+                        ...f,
+                        location,
+                        lat: match ? match.lat : f.lat,
+                        lng: match ? match.lng : f.lng,
+                      }));
+                      if (match) setMarkerPos({ lat: match.lat, lng: match.lng });
+                    }}
                   >
                     <option value="">— Select a location —</option>
                     {LOCATION_OPTIONS.map(l => <option key={l}>{l}</option>)}

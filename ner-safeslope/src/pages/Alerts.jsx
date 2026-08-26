@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Globe, Wifi, WifiOff, Clock, AlertTriangle, Users, ChevronDown, RefreshCw, Download } from 'lucide-react';
+import { Bell, Globe, Wifi, WifiOff, Clock, Users, RefreshCw, Download } from 'lucide-react';
 import { mockAlerts, multilingualAlertSample } from '../data/alerts';
 
 const SEVERITY_CONFIG = {
