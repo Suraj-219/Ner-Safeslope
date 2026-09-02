@@ -143,4 +143,4 @@ All data is in `src/data/`:
 
 ---
 
-*Built for hackathon demonstration. Not for production or emergency use.*
+CONTRIBUTERS-SURAJ PAL(FRONTEND),SOURA ROY MAHAPATRA(BACKEND)
